@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_NAME = "harness-agent-skills"
-RELEASE_VERSION = "0.1.12"
+RELEASE_VERSION = "0.1.13"
 REQUIRED_SKILLS = (
     "harness",
     "harness-adopt",
@@ -40,52 +40,99 @@ def require(condition: bool, message: str) -> None:
         fail(message)
 
 
-def validate_marketplace() -> Path:
+def validate_codex_marketplace() -> Path:
     path = ROOT / "marketplace.json"
-    require(path.exists(), "marketplace.json is missing")
+    require(path.exists(), "Codex marketplace.json is missing")
     marketplace = load_json(path)
 
-    require(marketplace.get("name") == "harnessworks", "marketplace name must be harnessworks")
+    require(marketplace.get("name") == "harnessworks", "Codex marketplace name must be harnessworks")
     require(
         marketplace.get("interface", {}).get("displayName") == "Harnessworks",
-        "marketplace interface.displayName must be Harnessworks",
+        "Codex marketplace interface.displayName must be Harnessworks",
     )
 
     plugins = marketplace.get("plugins")
-    require(isinstance(plugins, list), "marketplace plugins must be a list")
+    require(isinstance(plugins, list), "Codex marketplace plugins must be a list")
     matches = [plugin for plugin in plugins if plugin.get("name") == PLUGIN_NAME]
-    require(len(matches) == 1, f"marketplace must contain exactly one {PLUGIN_NAME} entry")
+    require(len(matches) == 1, f"Codex marketplace must contain exactly one {PLUGIN_NAME} entry")
 
     entry = matches[0]
-    require(entry.get("category") == "Productivity", "plugin category must be Productivity")
+    require(entry.get("category") == "Productivity", "Codex plugin category must be Productivity")
     require(
         entry.get("policy") == {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
-        "plugin policy must install on request and authenticate on install",
+        "Codex plugin policy must install on request and authenticate on install",
     )
     source = entry.get("source", {})
-    require(source.get("source") == "local", "plugin source must be local")
-    require(source.get("path") == f"./plugins/{PLUGIN_NAME}", "plugin source path is unexpected")
+    require(source.get("source") == "local", "Codex plugin source must be local")
+    require(source.get("path") == f"./plugins/{PLUGIN_NAME}", "Codex plugin source path is unexpected")
 
     plugin_root = (ROOT / source["path"]).resolve()
-    require(plugin_root.is_dir(), f"plugin path does not exist: {source['path']}")
-    require(ROOT.resolve() in plugin_root.parents, "plugin path must stay inside marketplace root")
+    require(plugin_root.is_dir(), f"Codex plugin path does not exist: {source['path']}")
+    require(ROOT.resolve() in plugin_root.parents, "Codex plugin path must stay inside marketplace root")
     return plugin_root
 
 
-def validate_plugin_manifest(plugin_root: Path) -> Path:
+def validate_claude_marketplace() -> Path:
+    path = ROOT / ".claude-plugin" / "marketplace.json"
+    require(path.exists(), "Claude marketplace catalog is missing")
+    marketplace = load_json(path)
+
+    require(marketplace.get("name") == "harnessworks", "Claude marketplace name must be harnessworks")
+    require(
+        marketplace.get("owner", {}).get("name") == "Harnessworks",
+        "Claude marketplace owner.name must be Harnessworks",
+    )
+    require(marketplace.get("version") == RELEASE_VERSION, f"Claude marketplace version must be {RELEASE_VERSION}")
+    require(marketplace.get("description"), "Claude marketplace description is required")
+
+    plugins = marketplace.get("plugins")
+    require(isinstance(plugins, list), "Claude marketplace plugins must be a list")
+    matches = [plugin for plugin in plugins if plugin.get("name") == PLUGIN_NAME]
+    require(len(matches) == 1, f"Claude marketplace must contain exactly one {PLUGIN_NAME} entry")
+
+    entry = matches[0]
+    require(entry.get("source") == f"./plugins/{PLUGIN_NAME}", "Claude plugin source path is unexpected")
+    require(entry.get("displayName") == "Harness Agent Skills", "Claude plugin displayName mismatch")
+    require(entry.get("category") == "Productivity", "Claude plugin category must be Productivity")
+    require("version" not in entry, "Claude marketplace entry should not duplicate plugin.json version")
+
+    plugin_root = (ROOT / entry["source"]).resolve()
+    require(plugin_root.is_dir(), f"Claude plugin path does not exist: {entry['source']}")
+    require(ROOT.resolve() in plugin_root.parents, "Claude plugin path must stay inside marketplace root")
+    return plugin_root
+
+
+def validate_codex_plugin_manifest(plugin_root: Path) -> Path:
     manifest_path = plugin_root / ".codex-plugin" / "plugin.json"
-    require(manifest_path.exists(), "plugin manifest is missing")
+    require(manifest_path.exists(), "Codex plugin manifest is missing")
     manifest = load_json(manifest_path)
 
-    require(manifest.get("name") == PLUGIN_NAME, "plugin manifest name mismatch")
-    require(manifest.get("version") == RELEASE_VERSION, f"plugin version must be {RELEASE_VERSION}")
-    require(manifest.get("skills") == "./skills/", "plugin skills path must be ./skills/")
-    require(manifest.get("license") == "MIT", "plugin license must be MIT")
-    require("harness-starter-kit" in manifest.get("repository", ""), "plugin repository must point to starter kit")
+    require(manifest.get("name") == PLUGIN_NAME, "Codex plugin manifest name mismatch")
+    require(manifest.get("version") == RELEASE_VERSION, f"Codex plugin version must be {RELEASE_VERSION}")
+    require(manifest.get("skills") == "./skills/", "Codex plugin skills path must be ./skills/")
+    require(manifest.get("license") == "MIT", "Codex plugin license must be MIT")
+    require("harness-starter-kit" in manifest.get("repository", ""), "Codex plugin repository must point to starter kit")
     require(
         manifest.get("interface", {}).get("displayName") == "Harness Agent Skills",
-        "plugin interface.displayName mismatch",
+        "Codex plugin interface.displayName mismatch",
     )
+
+    skills_root = plugin_root / "skills"
+    require(skills_root.is_dir(), "plugin skills directory is missing")
+    return skills_root
+
+
+def validate_claude_plugin_manifest(plugin_root: Path) -> Path:
+    manifest_path = plugin_root / ".claude-plugin" / "plugin.json"
+    require(manifest_path.exists(), "Claude plugin manifest is missing")
+    manifest = load_json(manifest_path)
+
+    require(manifest.get("name") == PLUGIN_NAME, "Claude plugin manifest name mismatch")
+    require(manifest.get("displayName") == "Harness Agent Skills", "Claude plugin displayName mismatch")
+    require(manifest.get("version") == RELEASE_VERSION, f"Claude plugin version must be {RELEASE_VERSION}")
+    require(manifest.get("license") == "MIT", "Claude plugin license must be MIT")
+    require("harness-starter-kit" in manifest.get("repository", ""), "Claude plugin repository must point to starter kit")
+    require("claude-code" in manifest.get("keywords", []), "Claude plugin keywords must include claude-code")
 
     skills_root = plugin_root / "skills"
     require(skills_root.is_dir(), "plugin skills directory is missing")
@@ -116,8 +163,12 @@ def validate_skills(skills_root: Path) -> None:
 
 
 def main() -> None:
-    plugin_root = validate_marketplace()
-    skills_root = validate_plugin_manifest(plugin_root)
+    codex_plugin_root = validate_codex_marketplace()
+    claude_plugin_root = validate_claude_marketplace()
+    require(codex_plugin_root == claude_plugin_root, "Codex and Claude marketplaces must point to the same plugin")
+    skills_root = validate_codex_plugin_manifest(codex_plugin_root)
+    claude_skills_root = validate_claude_plugin_manifest(claude_plugin_root)
+    require(skills_root == claude_skills_root, "Codex and Claude plugin manifests must share the same skills directory")
     validate_skills(skills_root)
     print("Marketplace package check passed.")
 
