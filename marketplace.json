@@ -1,0 +1,20 @@
+{
+  "name": "harnessworks",
+  "interface": {
+    "displayName": "Harnessworks"
+  },
+  "plugins": [
+    {
+      "name": "harness-agent-skills",
+      "source": {
+        "source": "local",
+        "path": "./plugins/harness-agent-skills"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
