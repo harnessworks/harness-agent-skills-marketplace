@@ -30,20 +30,21 @@ release `v0.1.13`.
 
 ## Install
 
-### Codex
+### Codex Pinned Release
 
-Add this marketplace to Codex:
+Add this marketplace to Codex pinned to this release:
 
 ```bash
 codex plugin marketplace add harnessworks/harness-agent-skills-marketplace --ref v0.1.13
 ```
 
 Restart Codex, open `/plugins`, select the `Harnessworks` marketplace, and
-install `harness-agent-skills`.
+install `harness-agent-skills`. This is a reproducible release install. To move
+to a later pinned release, run the same add command with the new release tag.
 
-### Claude Code
+### Claude Code Pinned Release
 
-Add this marketplace to Claude Code:
+Add this marketplace to Claude Code pinned to this release:
 
 ```bash
 claude plugin marketplace add harnessworks/harness-agent-skills-marketplace@v0.1.13
@@ -56,15 +57,29 @@ Use the router skill with the plugin namespace:
 /harness-agent-skills:harness doctor
 ```
 
+### Moving Channel
+
+If you want marketplace update commands to track the repository default branch
+instead of a pinned release tag, add the marketplace without a ref:
+
+```bash
+codex plugin marketplace add harnessworks/harness-agent-skills-marketplace
+claude plugin marketplace add harnessworks/harness-agent-skills-marketplace
+```
+
 ## Update
 
-To update an installed Codex marketplace snapshot after a new release:
+For pinned installs, move to a newer release by re-running the marketplace add
+command with the new tag, for example `v0.1.14`.
+
+For moving-channel Codex installs, refresh the marketplace snapshot:
 
 ```bash
 codex plugin marketplace upgrade harnessworks
 ```
 
-To update an installed Claude Code marketplace snapshot after a new release:
+For moving-channel Claude Code installs, refresh the marketplace and then update
+the installed plugin:
 
 ```bash
 claude plugin marketplace update harnessworks
@@ -93,6 +108,7 @@ Validate the marketplace package before tagging a release:
 
 ```bash
 python3 scripts/check_marketplace.py
+python3 scripts/check_marketplace.py --source-agent-skills ../harness-starter-kit/agent-skills
 claude plugin validate .
 claude plugin validate plugins/harness-agent-skills
 ```

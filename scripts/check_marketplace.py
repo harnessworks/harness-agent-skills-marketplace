@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
 import re
 import sys
@@ -21,6 +23,12 @@ REQUIRED_SKILLS = (
     "harness-update",
 )
 REFERENCE_RE = re.compile(r"\.\./\.\./references/[A-Za-z0-9._/-]+")
+README_REQUIRED_PHRASES = (
+    "Codex Pinned Release",
+    "Claude Code Pinned Release",
+    "Moving Channel",
+    "re-running the marketplace add",
+)
 
 
 def load_json(path: Path) -> dict:
@@ -162,7 +170,76 @@ def validate_skills(skills_root: Path) -> None:
         validate_skill(skill_name, skills_root)
 
 
+def validate_readme() -> None:
+    readme = ROOT / "README.md"
+    require(readme.exists(), "README.md is missing")
+    text = readme.read_text(encoding="utf-8")
+    for phrase in README_REQUIRED_PHRASES:
+        require(phrase in text, f"README.md must explain marketplace update semantics: {phrase}")
+
+
+def file_hash(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def tree_files(path: Path) -> dict[str, Path]:
+    return {
+        str(child.relative_to(path)): child
+        for child in path.rglob("*")
+        if child.is_file()
+    }
+
+
+def compare_trees(expected: Path, actual: Path) -> None:
+    expected_files = tree_files(expected)
+    actual_files = tree_files(actual)
+
+    missing = sorted(set(expected_files) - set(actual_files))
+    extra = sorted(set(actual_files) - set(expected_files))
+    changed = sorted(
+        relative
+        for relative in set(expected_files) & set(actual_files)
+        if file_hash(expected_files[relative]) != file_hash(actual_files[relative])
+    )
+
+    if missing or extra or changed:
+        details: list[str] = []
+        if missing:
+            details.append(f"missing from marketplace: {missing}")
+        if extra:
+            details.append(f"extra in marketplace: {extra}")
+        if changed:
+            details.append(f"different files: {changed}")
+        fail(
+            "marketplace plugin does not match source package at "
+            f"{expected}: {'; '.join(details)}"
+        )
+
+
+def validate_source_parity(source_agent_skills: Path | None, plugin_root: Path) -> None:
+    if source_agent_skills is None:
+        return
+    source = source_agent_skills.resolve()
+    require(source.is_dir(), f"source agent-skills path does not exist: {source}")
+    compare_trees(source, plugin_root)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--source-agent-skills",
+        type=Path,
+        help="Optional path to the source starter-kit agent-skills directory to compare against the packaged plugin.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = parse_args()
     codex_plugin_root = validate_codex_marketplace()
     claude_plugin_root = validate_claude_marketplace()
     require(codex_plugin_root == claude_plugin_root, "Codex and Claude marketplaces must point to the same plugin")
@@ -170,6 +247,8 @@ def main() -> None:
     claude_skills_root = validate_claude_plugin_manifest(claude_plugin_root)
     require(skills_root == claude_skills_root, "Codex and Claude plugin manifests must share the same skills directory")
     validate_skills(skills_root)
+    validate_readme()
+    validate_source_parity(args.source_agent_skills, codex_plugin_root)
     print("Marketplace package check passed.")
 
 
