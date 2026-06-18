@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_NAME = "harness-agent-skills"
-RELEASE_VERSION = "0.1.14"
+RELEASE_VERSION = "0.1.15"
 REQUIRED_SKILLS = (
     "harness",
     "harness-adopt",
@@ -28,6 +28,11 @@ README_REQUIRED_PHRASES = (
     "Claude Code Pinned Release",
     "Moving Channel",
     "re-running the marketplace add",
+    "Start:",
+    "Daily:",
+    "Maintain:",
+    "$harness adopt",
+    "/harness-agent-skills:harness adopt",
 )
 
 
