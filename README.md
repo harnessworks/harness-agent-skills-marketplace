@@ -48,7 +48,7 @@ Claude Code shortcut skills are also namespaced:
 
 The plugin is copied from
 [`harnessworks/harness-starter-kit`](https://github.com/harnessworks/harness-starter-kit)
-release `v0.1.15`.
+release `v0.1.16`.
 
 ## Install
 
@@ -57,7 +57,7 @@ release `v0.1.15`.
 Add this marketplace to Codex pinned to this release:
 
 ```bash
-codex plugin marketplace add harnessworks/harness-agent-skills-marketplace --ref v0.1.15
+codex plugin marketplace add harnessworks/harness-agent-skills-marketplace --ref v0.1.16
 ```
 
 Restart Codex, open `/plugins`, select the `Harnessworks` marketplace, and
@@ -69,7 +69,7 @@ to a later pinned release, run the same add command with the new release tag.
 Add this marketplace to Claude Code pinned to this release:
 
 ```bash
-claude plugin marketplace add harnessworks/harness-agent-skills-marketplace@v0.1.15
+claude plugin marketplace add harnessworks/harness-agent-skills-marketplace@v0.1.16
 claude plugin install harness-agent-skills@harnessworks
 ```
 
@@ -94,7 +94,7 @@ claude plugin marketplace add harnessworks/harness-agent-skills-marketplace
 ## Update
 
 For pinned installs, move to a newer release by re-running the marketplace add
-command with the new tag, for example `v0.1.15`.
+command with the new tag, for example `v0.1.16`.
 
 For moving-channel Codex installs, refresh the marketplace snapshot:
 
